@@ -4,6 +4,11 @@ local get_mode = function()
   return vim.api.nvim_get_mode().mode:sub(1, 1):upper()
 end
 
+local get_macro = {
+  require("noice").api.status.mode.get,
+  cond = require("noice").api.status.mode.has,
+}
+
 local progress = function()
   local cur = vim.fn.line(".")
   local total = vim.fn.line("$")
@@ -22,7 +27,10 @@ return {
     event = "VeryLazy",
     opts = {
       sections = {
-        lualine_a = { get_mode },
+        lualine_a = {
+          { get_mode, separator = "" },
+          get_macro,
+        },
         lualine_b = {
           { "branch", icon = "", separator = "" },
           {
