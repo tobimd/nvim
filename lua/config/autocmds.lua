@@ -148,20 +148,10 @@ vim.api.nvim_create_autocmd("BufEnter", {
   callback = function()
     set_opt("latexbuild", true)
     set_opt("latexwatch", true)
-    vim.cmd("set textwidth=70")
-  end,
-})
-
--- lsp inlayhints
-vim.api.nvim_create_autocmd("LspAttach", {
-  group = vim.api.nvim_create_augroup("LaspAttach_inlayhints", {}),
-  callback = function(args)
-    if not (args.data and args.data.client_id) then
-      return
-    end
-
-    local bufnr = args.buf
-    local client = vim.lsp.get_client_by_id(args.data.client_id)
-    require("lsp-inlayhints").on_attach(client, bufnr)
+    vim.cmd([[
+      set textwidth=70
+      set spell
+      set spelllang=es,en
+    ]])
   end,
 })
