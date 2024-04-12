@@ -1,13 +1,19 @@
 -- change lualine options (info bar below)
 
+local get_buffer = function()
+  return "#" .. tostring(vim.fn.bufnr("%"))
+end
+
 local get_mode = function()
   return vim.api.nvim_get_mode().mode:sub(1, 1):upper()
 end
 
+---@diagnostic disable: undefined-field
 local get_macro = {
   require("noice").api.status.mode.get,
   cond = require("noice").api.status.mode.has,
 }
+---@diagnostic enable: undefined-field
 
 local progress = function()
   local cur = vim.fn.line(".")
@@ -26,13 +32,13 @@ return {
     "nvim-lualine/lualine.nvim",
     event = "VeryLazy",
     opts = {
+      options = {
+        component_separators = { left = "", right = "" },
+      },
       sections = {
-        lualine_a = {
-          { get_mode, separator = "" },
-          get_macro,
-        },
+        lualine_a = { get_mode, get_macro },
         lualine_b = {
-          { "branch", icon = "", separator = "" },
+          { "branch", icon = "" },
           {
             "diff",
             colored = true,
@@ -44,7 +50,7 @@ return {
           },
         },
         lualine_c = {
-          { "filetype", separator = "" },
+          { "filetype" },
           {
             "filename",
             newfile_status = true,
@@ -57,12 +63,9 @@ return {
             },
           },
         },
-        lualine_x = {
-          { "location", separator = "" },
-          { progress },
-        },
-        lualine_y = { "tabs" },
-        lualine_z = { "diagnostics" },
+        lualine_x = { "diagnostics" },
+        lualine_y = { "location", progress },
+        lualine_z = { get_buffer },
       },
     },
   },
