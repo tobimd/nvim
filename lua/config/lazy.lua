@@ -27,7 +27,10 @@ require("lazy").setup({
     -- version = "*", -- try installing the latest stable version for plugins that support semver
   },
   install = { colorscheme = { "catpuccin" } },
-  checker = { enabled = true }, -- automatically check for plugin updates
+  checker = {
+    enabled = true, -- automatically check for plugin updates
+    frequency = 604800, -- check every week (60s * 60m * 24h * 7d)
+  },
   performance = {
     rtp = {
       -- disable some rtp plugins

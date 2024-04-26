@@ -3,6 +3,7 @@
 return {
   {
     "folke/flash.nvim",
+    keys = { { "s", mode = { "n", "x", "o" }, false } }, -- disable default keymap
     opts = {
       labels = "qwertasdfgzxcvb",
       search = { mode = "search" }, -- use regex
@@ -16,7 +17,7 @@ return {
         style = "inline",
       },
       modes = {
-        search = { enabled = false }, -- disable for '/' and '?'
+        -- search = { enabled = false }, -- disable for '/' and '?'
         char = { enabled = false }, -- disable for 'f', 'F', 't' and 'T'
       },
       prompt = {

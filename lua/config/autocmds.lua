@@ -9,6 +9,15 @@ local get_opt = function(name, default)
   return value
 end
 
+local nty = function()
+  local notify = require("notify")
+  return function(msg, lvl)
+    return notify(msg, lvl, { title = "LatexBuild" })
+  end
+end
+
+local lvl = vim.log.levels
+
 local parentdir = function(path)
   if path == nil then
     return nil
@@ -34,7 +43,7 @@ end
 local context = function()
   local file = vim.fn.expand("%:p")
   local parent = parentdir(file)
-  local target = parent .. "/target"
+  local target = parent .. "/out"
   local curr = parent .. "/main.tex"
 
   if file == curr then
@@ -49,7 +58,7 @@ local context = function()
     end
 
     parent = parentdir(parent)
-    target = parent .. "/target"
+    target = parent .. "/out"
     curr = parent .. "/main.tex"
   end
 
@@ -58,12 +67,12 @@ end
 
 -- setup nvim command
 vim.api.nvim_create_user_command("LatexBuild", function()
-  local nty = require("notify")
+  local log = nty()
   local val = not get_opt("latexbuild", false)
   local str = val and "on" or "off"
 
   set_opt("latexbuild", val)
-  nty("LatexBuild set `" .. str .. "`")
+  log("LatexBuild set `" .. str .. "`", lvl.INFO)
 end, { desc = "Toggle latex build process on file save", nargs = 0 })
 
 vim.api.nvim_create_user_command("LatexWatch", function()
@@ -71,30 +80,25 @@ vim.api.nvim_create_user_command("LatexWatch", function()
     return
   end
 
-  local nty = require("notify")
+  local log = nty()
   local val = not get_opt("latexwatch", false)
   local str = val and "on" or "off"
 
   set_opt("latexwatch", val)
-  nty("LatexWatch set `" .. str .. "`")
+  log("LatexWatch set `" .. str .. "`", lvl.INFO)
 end, { desc = "Toggle latex watch process on file save", nargs = 0 })
 
 -- setup nvim autocmd
 local refresh_web_cmd = function(ctx)
-  local nty = require("notify")
   local job = require("plenary.job")
-  job
-    :new({
-      command = ctx.dir .. "/watch.sh",
-      cwd = ctx.dir,
-      -- on_stderr = function(_, data) nty("Command `./watch.sh` failed: " .. data, vim.log.levels.ERROR, { title = "LatexBuild" }) end,
-    })
-    :start()
+  job:new({ command = ctx.dir .. "/watch.sh", cwd = ctx.dir }):start()
 end
 
 local latexmk_cmd = function(ctx, watch)
-  local nty = require("notify")
+  local log = nty()
   local job = require("plenary.job")
+  local err = setmetatable({}, { __index = table })
+
   job
     :new({
       command = "latexmk",
@@ -108,16 +112,16 @@ local latexmk_cmd = function(ctx, watch)
       },
       cwd = ctx.dir,
       on_stderr = function(_, data)
-        nty("Command `latexmk` failed: " .. data)
+        err:insert(data)
       end,
       on_exit = function(_, code)
-        -- nty('DEBUG: signal="' .. tostring(signal) .. '", code="' .. tostring(code) .. '", src="' .. tostring(ctx.src) .. '", dir="' .. tostring(ctx.dir) .. '", trg="' .. tostring(ctx.trg) .. '"')
         if code == 0 then
-          nty("Successfully built PDF", vim.log.levels.INFO, { title = "LatexBuild" })
-
+          log("Successfully built PDF", lvl.INFO)
           if watch then
             refresh_web_cmd(ctx)
           end
+        else
+          log("Command `latexmk` failed: " .. err:concat("\n"), lvl.ERROR)
         end
       end,
     })
@@ -125,15 +129,15 @@ local latexmk_cmd = function(ctx, watch)
 end
 
 vim.api.nvim_create_autocmd("BufWritePost", {
-  pattern = "*.tex",
+  pattern = { "*.tex", "*.bib" },
   desc = "Build latex pdf when saving a `.tex` file",
   callback = function()
     if get_opt("latexbuild", false) then
-      local nty = require("notify")
+      local log = nty()
       local ctx = context()
 
       if ctx == nil then
-        nty("Failed to find root `main.tex` file", vim.log.levels.ERROR, { title = "LatexBuild" })
+        log("Failed to find root `main.tex` file", lvl.ERROR)
         return
       end
 
@@ -152,6 +156,18 @@ vim.api.nvim_create_autocmd("BufEnter", {
       set textwidth=70
       set spell
       set spelllang=es,en
+    ]])
+  end,
+})
+
+vim.api.nvim_create_autocmd("BufEnter", {
+  pattern = "*.txt",
+  desc = "Set default options for txt files",
+  callback = function()
+    vim.cmd([[
+      set textwidth=70
+      set spell
+      set spelllang=en,es
     ]])
   end,
 })
